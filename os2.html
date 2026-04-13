@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CADS V2.0 | Multi-Core Preemptive Sim</title>
+    <style>
+        :root {
+            --neon-green: #00ff41;
+            --bg-dark: #050505;
+            --panel-bg: #111;
+            --danger: #ff003c;
+        }
+        body {
+            background: var(--bg-dark);
+            color: var(--neon-green);
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 20px;
+            margin: 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+        .core-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .core-box {
+            flex: 1;
+            border: 2px solid #333;
+            padding: 10px;
+            text-align: center;
+            background: var(--panel-bg);
+            transition: 0.3s;
+        }
+        .core-active { border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        
+        .terminal {
+            background: #000;
+            border: 1px solid #333;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .controls { background: var(--panel-bg); padding: 20px; border: 1px solid #333; }
+        input, button {
+            width: 100%; margin-bottom: 10px;
+            background: #000; border: 1px solid var(--neon-green);
+            color: var(--neon-green); padding: 8px;
+        }
+        button:hover { background: var(--neon-green); color: #000; cursor: pointer; }
+        .stat-val { font-size: 1.5rem; color: white; }
+    </style>
+</head>
+<body>
+
+<h1>// CADS_V2_MULTI-CORE_KERNEL</h1>
+
+<div class="grid">
+    <div class="main-panel">
+        <div class="core-container" id="cores">
+            <div class="core-box" id="core0">CORE_0<br><span class="freq">IDLE</span></div>
+            <div class="core-box" id="core1">CORE_1<br><span class="freq">IDLE</span></div>
+            <div class="core-box" id="core2">CORE_2<br><span class="freq">IDLE</span></div>
+            <div class="core-box" id="core3">CORE_3<br><span class="freq">IDLE</span></div>
+        </div>
+
+        <div class="terminal" id="log">> Initializing Power Management...<br>> System Ready.</div>
+
+        <div class="stats-bar">
+            Total Joules Saved: <span id="totalSaved" class="stat-val">0</span>% | 
+            System Temp: <span id="sysTemp" class="stat-val">35</span>°C
+        </div>
+    </div>
+
+    <div class="controls">
+        <h3>INJECT TASK</h3>
+        <label>Workload (Cycles):</label>
+        <input type="number" id="work" value="100">
+        <label>Deadline (ms):</label>
+        <input type="number" id="dead" value="500">
+        <label>Priority:</label>
+        <select id="prio" style="width:100%; background:#000; color:var(--neon-green); margin-bottom:10px;">
+            <option value="critical">CRITICAL (Preempts)</option>
+            <option value="background">BACKGROUND (Slower)</option>
+        </select>
+        <button onclick="injectTask()">INJECT INTO QUEUE</button>
+        <button onclick="toggleSystem()" id="sysBtn" style="border-color:var(--danger); color:var(--danger);">START KERNEL</button>
+    </div>
+</div>
+
+<script>
+    let isRunning = false;
+    let clock = 0;
+    let taskQueue = [];
+    let stats = { saved: 0, totalNaive: 0, totalCads: 0, temp: 35 };
+
+    function log(msg) {
+        const l = document.getElementById('log');
+        l.innerHTML += `<div>[${clock}ms] ${msg}</div>`;
+        l.scrollTop = l.scrollHeight;
+    }
+
+    function injectTask() {
+        const t = {
+            id: Math.floor(Math.random()*1000),
+            work: parseFloat(document.getElementById('work').value),
+            deadline: clock + parseFloat(document.getElementById('dead').value),
+            prio: document.getElementById('prio').value
+        };
+        taskQueue.push(t);
+        log(`Task #${t.id} injected (${t.prio})`);
+    }
+
+    function toggleSystem() {
+        isRunning = !isRunning;
+        document.getElementById('sysBtn').innerText = isRunning ? "HALT KERNEL" : "START KERNEL";
+        if(isRunning) runKernel();
+    }
+
+    async function runKernel() {
+        while(isRunning) {
+            clock += 10; // 10ms tick
+            processQueue();
+            updateUI();
+            await new Promise(r => setTimeout(r, 100)); // Sim speed
+        }
+    }
+
+    function processQueue() {
+        if(taskQueue.length === 0) {
+            resetCores();
+            return;
+        }
+
+        // Sort: Critical first, then by earliest deadline
+        taskQueue.sort((a,b) => (a.prio === 'critical' ? -1 : 1) || (a.deadline - b.deadline));
+
+        let currentTask = taskQueue[0];
+        let timeRemaining = currentTask.deadline - clock;
+
+        if(timeRemaining <= 0) {
+            log(`<span style="color:red">! Task #${currentTask.id} MISSED DEADLINE</span>`);
+            taskQueue.shift();
+            return;
+        }
+
+        // Calculate Freq: F = Work / Time
+        let fTarget = currentTask.work / timeRemaining;
+        fTarget = Math.max(0.8, Math.min(3.2, fTarget));
+
+        // Power Simulation
+        let pCads = 0.8 * Math.pow(fTarget, 3);
+        let pNaive = 0.8 * Math.pow(3.2, 3);
+        stats.totalCads += pCads;
+        stats.totalNaive += pNaive;
+
+        // Core Activity
+        document.getElementById('core0').className = "core-box core-active";
+        document.getElementById('core0').querySelector('.freq').innerText = fTarget.toFixed(2) + " GHz";
+
+        // Progress work
+        currentTask.work -= (fTarget * 10); // Work done in 10ms
+        
+        if(currentTask.work <= 0) {
+            log(`Task #${currentTask.id} Complete. Energy Saved: ${((pNaive-pCads)/pNaive*100).toFixed(1)}%`);
+            taskQueue.shift();
+        }
+
+        // Simple Temp model
+        stats.temp = 35 + (fTarget * 5) + (taskQueue.length * 2);
+    }
+
+    function resetCores() {
+        for(let i=0; i<4; i++) {
+            document.getElementById(`core${i}`).className = "core-box";
+            document.getElementById(`core${i}`).querySelector('.freq').innerText = "IDLE";
+        }
+        stats.temp = Math.max(35, stats.temp - 1);
+    }
+
+    function updateUI() {
+        if(stats.totalNaive > 0) {
+            document.getElementById('totalSaved').innerText = ((stats.totalNaive - stats.totalCads) / stats.totalNaive * 100).toFixed(1);
+        }
+        document.getElementById('sysTemp').innerText = stats.temp.toFixed(1);
+        document.getElementById('sysTemp').style.color = stats.temp > 75 ? 'red' : 'white';
+    }
+</script>
+</body>
+</html>
