@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CADS V3.0 | Sentinel Power Management</title>
+    <style>
+        :root {
+            --cyan: #00f2ff;
+            --matrix-green: #00ff41;
+            --warning-orange: #ffcc00;
+            --critical-red: #ff003c;
+            --bg-deep: #020202;
+            --panel-border: #1a1a1a;
+        }
+        body {
+            background: var(--bg-deep);
+            color: var(--matrix-green);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 20px;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .main-view { background: #080808; border: 1px solid var(--panel-border); padding: 20px; border-radius: 8px; }
+        .core-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .core {
+            border: 1px solid #333; padding: 15px; text-align: center; border-radius: 4px;
+            background: linear-gradient(145deg, #0a0a0a, #111);
+        }
+        .core.active { border-color: var(--cyan); box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
+        .core.alert { border-color: var(--critical-red); animation: pulse 1s infinite; }
+        
+        .terminal {
+            background: #000; height: 250px; overflow-y: scroll;
+            padding: 10px; font-family: 'Consolas', monospace; font-size: 13px;
+            border: 1px solid #222; margin: 15px 0; color: #aaa;
+        }
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+        .stat-card { background: #111; padding: 10px; border-radius: 4px; border-left: 3px solid var(--cyan); }
+        
+        .controls { background: #111; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        input, select, button {
+            width: 100%; margin-bottom: 12px; background: #000; color: white;
+            border: 1px solid #444; padding: 10px; box-sizing: border-box;
+        }
+        button { cursor: pointer; background: var(--cyan); color: black; font-weight: bold; border: none; }
+        button:hover { filter: brightness(1.2); }
+
+        footer {
+            margin-top: 30px; padding: 20px; background: #0a0a0a;
+            border-top: 1px solid #333; font-size: 0.9rem; line-height: 1.6; color: #888;
+        }
+        .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .footer-title { color: var(--cyan); font-weight: bold; margin-bottom: 8px; display: block; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="main-view">
+        <h2 style="margin-top:0; color: var(--cyan);">CADS_V3_SENTINEL_SYSTEM</h2>
+        
+        <div class="core-grid">
+            <div id="c0" class="core">C0<br><small id="c0-f">IDLE</small></div>
+            <div id="c1" class="core">C1<br><small id="c1-f">IDLE</small></div>
+            <div id="c2" class="core">C2<br><small id="c2-f">IDLE</small></div>
+            <div id="c3" class="core">C3<br><small id="c3-f">IDLE</small></div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-card">ENERGY SAVED<br><span id="e-save" style="font-size: 1.5rem; color:var(--matrix-green)">0.0%</span></div>
+            <div class="stat-card">TEMP<br><span id="temp" style="font-size: 1.5rem;">35°C</span></div>
+            <div class="stat-card">SECURITY<br><span id="sec-status" style="font-size: 1.5rem; color:var(--matrix-green)">NOMINAL</span></div>
+        </div>
+
+        <div id="term" class="terminal">> Kernel V3 Booted. Security Sentinel Active...</div>
+    </div>
+
+    <div class="controls">
+        <h4 style="margin-top:0">PROCESS INJECTOR</h4>
+        <input type="number" id="work" placeholder="Workload (Cycles)" value="200">
+        <input type="number" id="dead" placeholder="Deadline (ms)" value="800">
+        <select id="prio">
+            <option value="background">Background (Eco)</option>
+            <option value="critical">Critical (Priority)</option>
+            <option value="malicious">Suspect/Heavy (Test Virus)</option>
+        </select>
+        <button onclick="inject()">INJECT PROCESS</button>
+        <hr style="border-color:#222">
+        <button onclick="toggle()" id="toggleBtn" style="background:var(--critical-red)">START KERNEL</button>
+        <div style="font-size:11px; margin-top:10px; color:#666">
+            <input type="checkbox" id="raceSleep" style="width:auto"> Enable "Race to Sleep" (Leakage Mitigation)
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-grid">
+        <div>
+            <span class="footer-title">WHAT THIS DOES</span>
+            CADS V3.0 is a <strong>Dynamic Voltage and Frequency Scaling (DVFS)</strong> simulator. It calculates the minimum required frequency to meet a task's deadline, significantly reducing power consumption ($P \propto V^2f$). 
+            This version specifically monitors core behavior to detect <strong>Power Viruses</strong> (tasks that intentionally drain battery or cause thermal stress) and includes <strong>Leakage Mitigation</strong> logic to decide when running faster and entering deep sleep is more efficient than running slowly.
+        </div>
+        <div>
+            <span class="footer-title">HOW TO USE IT</span>
+            1. <strong>Configure Tasks:</strong> Set workload cycles and deadlines. <br>
+            2. <strong>Priority:</strong> Use 'Critical' for immediate processing or 'Suspect' to test the Security Sentinel.<br>
+            3. <strong>Execution:</strong> Hit 'Start Kernel'. Observe how Core 0 handles tasks. If a task is too heavy, the system flags it in red.<br>
+            4. <strong>Analyze:</strong> Watch the 'Energy Saved' metric. The higher the slack (time available), the more juice you save.
+        </div>
+    </div>
+</footer>
+
+<script>
+    let active = false;
+    let clock = 0;
+    let queue = [];
+    let stats = { naive: 0, cads: 0, temp: 35 };
+
+    const log = (m, color = '#aaa') => {
+        const t = document.getElementById('term');
+        t.innerHTML += `<div style="color:${color}">[${clock}ms] ${m}</div>`;
+        t.scrollTop = t.scrollHeight;
+    };
+
+    function inject() {
+        const t = {
+            id: Math.floor(Math.random()*9000)+1000,
+            work: parseFloat(document.getElementById('work').value),
+            deadline: clock + parseFloat(document.getElementById('dead').value),
+            type: document.getElementById('prio').value,
+            initWork: parseFloat(document.getElementById('work').value)
+        };
+        queue.push(t);
+        log(`Process PID:${t.id} loaded.`, 'var(--cyan)');
+    }
+
+    function toggle() {
+        active = !active;
+        document.getElementById('toggleBtn').innerText = active ? "HALT KERNEL" : "START KERNEL";
+        if(active) loop();
+    }
+
+    async function loop() {
+        while(active) {
+            clock += 20;
+            process();
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+
+    function process() {
+        const c0 = document.getElementById('c0');
+        const c0f = document.getElementById('c0-f');
+
+        if(queue.length === 0) {
+            c0.className = 'core'; c0f.innerText = 'IDLE';
+            stats.temp = Math.max(35, stats.temp - 0.5);
+            updateUI();
+            return;
+        }
+
+        // Sort: Critical first
+        queue.sort((a,b) => (a.type === 'critical' ? -1 : 1) || (a.deadline - b.deadline));
+        let t = queue[0];
+        let slack = t.deadline - clock;
+
+        // Power Virus Detection
+        if(t.type === 'malicious' || (t.work > 500 && slack < 100)) {
+            document.getElementById('sec-status').innerText = "THREAT DETECTED";
+            document.getElementById('sec-status').style.color = "var(--critical-red)";
+            c0.className = "core alert";
+        } else {
+            document.getElementById('sec-status').innerText = "NOMINAL";
+            document.getElementById('sec-status').style.color = "var(--matrix-green)";
+            c0.className = "core active";
+        }
+
+        let f = Math.max(0.8, Math.min(3.2, t.work / (slack/10)));
+        
+        // Race to Sleep logic
+        if(document.getElementById('raceSleep').checked && f < 1.5) {
+            f = 3.2; // Blast it to finish early and sleep
+        }
+
+        c0f.innerText = f.toFixed(2) + " GHz";
+        
+        // Energy Tracking
+        stats.cads += 0.8 * Math.pow(f, 3);
+        stats.naive += 0.8 * Math.pow(3.2, 3);
+        
+        t.work -= (f * 20); // Work done in tick
+        stats.temp = 35 + (f * 8);
+
+        if(t.work <= 0) {
+            log(`PID:${t.id} exit success.`, 'var(--matrix-green)');
+            queue.shift();
+        } else if (clock > t.deadline) {
+            log(`PID:${t.id} KILLED (Deadline Miss).`, 'var(--critical-red)');
+            queue.shift();
+        }
+        updateUI();
+    }
+
+    function updateUI() {
+        if(stats.naive > 0) {
+            document.getElementById('e-save').innerText = ((stats.naive - stats.cads)/stats.naive * 100).toFixed(1) + "%";
+        }
+        document.getElementById('temp').innerText = stats.temp.toFixed(1) + "°C";
+        document.getElementById('temp').style.color = stats.temp > 70 ? 'var(--critical-red)' : 'white';
+    }
+</script>
+</body>
+</html>
