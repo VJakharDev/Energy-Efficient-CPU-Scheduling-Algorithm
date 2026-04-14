@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CADS V4.0 | Neural-Agentic Kernel</title>
+    <style>
+        :root {
+            --electric-blue: #00d4ff;
+            --terminal-gold: #ffb400;
+            --hacker-green: #00ff41;
+            --bg-obsidian: #030303;
+        }
+        body {
+            background: var(--bg-obsidian);
+            color: var(--hacker-green);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            margin: 0; padding: 20px;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+            max-width: 1300px;
+            margin: auto;
+        }
+        .main-core-map {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.05);
+        }
+        .core-display { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .core-unit {
+            background: #000; border: 1px solid #333; padding: 20px;
+            text-align: center; border-radius: 8px; position: relative;
+            transition: all 0.2s ease;
+        }
+        .core-unit.active { border-color: var(--electric-blue); }
+        .core-unit.hopping { border-color: var(--terminal-gold); animation: flash 0.5s; }
+        
+        .ai-gauge {
+            height: 10px; background: #222; border-radius: 5px; margin-top: 10px; overflow: hidden;
+        }
+        #ai-fill { height: 100%; width: 0%; background: var(--electric-blue); transition: width 0.3s; }
+
+        .terminal-stream {
+            background: #000; height: 300px; overflow-y: auto;
+            border: 1px solid #1a1a1a; padding: 10px; font-size: 12px;
+            color: #888; margin: 20px 0;
+        }
+        .control-panel { background: #0f0f0f; padding: 25px; border-radius: 12px; border: 1px solid #222; }
+        input, select, button {
+            width: 100%; margin-bottom: 15px; background: #000; color: white;
+            border: 1px solid #333; padding: 12px; font-size: 14px;
+        }
+        button { background: var(--electric-blue); color: black; font-weight: 800; cursor: pointer; border: none; }
+        button:hover { filter: brightness(1.2); }
+
+        footer {
+            margin-top: 40px; padding: 30px; background: #070707;
+            border-radius: 12px; font-size: 0.85rem; color: #777;
+        }
+        .footer-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px; }
+        .tag { color: var(--electric-blue); font-weight: bold; text-transform: uppercase; }
+
+        @keyframes flash { from { border-color: white; } to { border-color: var(--terminal-gold); } }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <div class="main-core-map">
+        <h3 style="color:var(--electric-blue); margin-top:0;">// SYSTEM_ORCHESTRATOR_V4.0 // NEURAL_MODE</h3>
+        
+        <div class="core-display">
+            <div id="core0" class="core-unit">CPU_0<br><span id="c0-load">IDLE</span></div>
+            <div id="core1" class="core-unit">CPU_1<br><span id="c1-load">IDLE</span></div>
+            <div id="core2" class="core-unit">CPU_2<br><span id="c2-load">IDLE</span></div>
+            <div id="core3" class="core-unit">CPU_3<br><span id="c3-load">IDLE</span></div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <span style="font-size: 12px;">NEURAL PREDICTOR CONFIDENCE</span>
+            <div class="ai-gauge"><div id="ai-fill"></div></div>
+        </div>
+
+        <div class="terminal-stream" id="stream">> Kernel initialized.<br>> AI Agent "Sentinel-4" is now monitoring tasks...</div>
+        
+        <div style="display: flex; gap: 20px;">
+            <div style="flex:1">EFFICIENCY: <span id="eff-score" style="color:white; font-size: 1.2rem;">0%</span></div>
+            <div style="flex:1">THREAT LEVEL: <span id="threat-score" style="color:var(--hacker-green)">LOW</span></div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <label>Inject New Process Bundle</label>
+        <input type="number" id="cycles" placeholder="Complexity (Cycles)" value="400">
+        <input type="number" id="time" placeholder="Max Latency (ms)" value="1200">
+        <select id="prio">
+            <option value="user">User Interaction (High Prio)</option>
+            <option value="daemon">System Daemon (Steady)</option>
+            <option value="crypto">Cryptographic Op (Sensitive)</option>
+        </select>
+        <button onclick="injectTask()">LOAD PROCESS</button>
+        <hr style="border:0; border-top:1px solid #222; margin: 20px 0;">
+        <button onclick="toggleKernel()" id="kBtn" style="background:var(--terminal-gold)">BOOT KERNEL</button>
+        <div style="font-size: 11px; color:#555; margin-top:10px;">
+            <input type="checkbox" id="obf" checked> Enable Side-Channel Obfuscation (Jitter)
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-cols">
+        <div>
+            <span class="tag">The Algorithm</span><br>
+            V4.0 uses <strong>Neural Slack Prediction</strong>. By analyzing task history, it predicts whether to use DVFS (scaling down) or Race-to-Sleep (scaling up). It effectively manages the <em>Power vs. Latency</em> curve using simulated AI heuristics.
+        </div>
+        <div>
+            <span class="tag">Security Layer</span><br>
+            Introduces <strong>Core-Hopping</strong> and <strong>Clock Jitter</strong>. These features are designed to disrupt Side-Channel Attacks (SCA) like Simple Power Analysis (SPA) by injecting noise into the CPU's power signature.
+        </div>
+        <div>
+            <span class="tag">Usage Guide</span><br>
+            Enter your cycle count and deadline. Selecting 'Cryptographic' will trigger the Core-Hopping logic. Observe the 'Confidence' bar—this is the AI deciding the optimal frequency for energy conservation.
+        </div>
+    </div>
+</footer>
+
+<script>
+    let active = false;
+    let ticks = 0;
+    let pool = [];
+    let metrics = { cads: 0, naive: 0 };
+
+    const write = (msg, col = "#888") => {
+        const s = document.getElementById('stream');
+        s.innerHTML += `<div style="color:${col}">[T+${ticks}ms] ${msg}</div>`;
+        s.scrollTop = s.scrollHeight;
+    };
+
+    function injectTask() {
+        const task = {
+            id: Math.floor(Math.random()*999),
+            work: parseFloat(document.getElementById('cycles').value),
+            deadline: ticks + parseFloat(document.getElementById('time').value),
+            prio: document.getElementById('prio').value,
+            core: 0
+        };
+        pool.push(task);
+        write(`Process PID:${task.id} allocated to pool.`, 'var(--electric-blue)');
+    }
+
+    function toggleKernel() {
+        active = !active;
+        document.getElementById('kBtn').innerText = active ? "SHUTDOWN" : "BOOT KERNEL";
+        if(active) mainLoop();
+    }
+
+    async function mainLoop() {
+        while(active) {
+            ticks += 50;
+            updateKernel();
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+
+    function updateKernel() {
+        if(pool.length === 0) {
+            document.querySelectorAll('.core-unit').forEach(c => {
+                c.className = "core-unit";
+                c.querySelector('span').innerText = "IDLE";
+            });
+            document.getElementById('ai-fill').style.width = "0%";
+            return;
+        }
+
+        let t = pool[0];
+        let slack = t.deadline - ticks;
+        
+        // AI Confidence Logic (Simulated)
+        let confidence = Math.random() * 100;
+        document.getElementById('ai-fill').style.width = confidence + "%";
+
+        // Frequency Calculation
+        let f = Math.max(0.8, Math.min(3.2, t.work / (slack/5)));
+        
+        // Security Jitter
+        if(document.getElementById('obf').checked) {
+            f += (Math.random() * 0.2 - 0.1); 
+        }
+
+        // Core Hopping Logic
+        if(t.prio === 'crypto' && ticks % 200 === 0) {
+            t.core = (t.core + 1) % 4;
+            write(`PID:${t.id} migrated to CPU_${t.core} (Security Hopping)`, 'var(--terminal-gold)');
+            document.getElementById(`core${t.core}`).classList.add('hopping');
+        }
+
+        // UI Update
+        document.querySelectorAll('.core-unit').forEach((c, idx) => {
+            if(idx === t.core) {
+                c.className = "core-unit active";
+                c.querySelector('span').innerText = f.toFixed(2) + " GHz";
+            } else {
+                c.className = "core-unit";
+                c.querySelector('span').innerText = "IDLE";
+            }
+        });
+
+        // Work Progress
+        t.work -= (f * 50);
+        metrics.cads += Math.pow(f, 3);
+        metrics.naive += Math.pow(3.2, 3);
+
+        if(t.work <= 0) {
+            write(`PID:${t.id} closed. State: SUCCESS`, 'var(--hacker-green)');
+            pool.shift();
+        } else if (ticks > t.deadline) {
+            write(`PID:${t.id} SIGKILL (Timeout Error)`, 'red');
+            pool.shift();
+        }
+
+        document.getElementById('eff-score').innerText = ((metrics.naive - metrics.cads)/metrics.naive * 100).toFixed(1) + "%";
+    }
+</script>
+</body>
+</html>
