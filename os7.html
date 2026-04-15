@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy-Efficient CPU Scheduling Algorithm</title>
+    <style>
+        :root {
+            --primary: #00ff41;
+            --bg: #0a0a0a;
+            --surface: #1a1a1a;
+            --text: #e0e0e0;
+            --danger: #ff3e3e;
+            --success: #00ff41;
+        }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 20px;
+        }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--surface); padding-bottom: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; max-width: 1200px; margin: auto; }
+        
+        .card { background: var(--surface); border: 1px solid #333; border-radius: 4px; padding: 20px; margin-bottom: 20px; }
+        .core-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .core { background: #000; border: 1px solid #444; padding: 15px; text-align: center; border-radius: 4px; }
+        .active-core { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,255,65,0.2); }
+        
+        .meter-container { height: 10px; background: #000; border-radius: 5px; margin: 15px 0; overflow: hidden; border: 1px solid #333; }
+        #power-bar { background: var(--primary); width: 0%; transition: 0.3s; }
+        
+        .log { background: #000; height: 200px; overflow-y: auto; padding: 10px; font-family: monospace; font-size: 13px; border: 1px solid #333; color: #00ff41; }
+        
+        label { font-size: 13px; color: #aaa; }
+        input, select, button { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; background: #000; color: white; border: 1px solid #444; border-radius: 4px; box-sizing: border-box; }
+        button { background: var(--primary); color: black; font-weight: bold; border: none; cursor: pointer; }
+        button:hover { filter: brightness(1.2); }
+
+        footer { margin-top: 40px; padding: 25px; background: var(--surface); border: 1px solid #333; border-radius: 4px; font-size: 14px; line-height: 1.6; }
+        .footer-title { color: var(--primary); font-weight: bold; display: block; margin-bottom: 10px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 style="margin:0;">Energy-Efficient CPU Scheduling Algorithm</h1>
+    <p style="color: #888;">Optimization of Power Consumption in Mobile and Embedded Systems</p>
+</div>
+
+<div class="grid">
+    <div class="main">
+        <div class="card">
+            <h3 style="margin-top:0">System Execution Monitor</h3>
+            <div class="core-row">
+                <div id="c0" class="core">Core 0<br><small id="c0-f">IDLE</small></div>
+                <div id="c1" class="core">Core 1<br><small>OFFLINE</small></div>
+                <div id="c2" class="core">Core 2<br><small>OFFLINE</small></div>
+                <div id="c3" class="core">Core 3<br><small>OFFLINE</small></div>
+            </div>
+            
+            <p style="margin-top:20px; font-size:12px;">Real-Time Power Consumption (Watts):</p>
+            <div class="meter-container"><div id="power-bar"></div></div>
+            
+            <div style="display:flex; justify-content:space-between;">
+                <span>Total Energy Saved: <b id="save-pct" style="color:var(--success)">0.0%</b></span>
+                <span>Power Budget: <b id="budget-status" style="color:var(--success)">STABLE</b></span>
+            </div>
+        </div>
+
+        <div class="log" id="sys-log">> Algorithm initialized. Waiting for task injection...</div>
+    </div>
+
+    <div class="sidebar">
+        <div class="card">
+            <h4 style="margin-top:0">Task Configuration</h4>
+            <label>Workload (Cycles)</label>
+            <input type="number" id="load" value="400">
+            <label>Deadline (ms)</label>
+            <input type="number" id="deadline" value="1000">
+            <label>Process Priority</label>
+            <select id="prio">
+                <option value="low">Low (Background)</option>
+                <option value="high">High (Time-Critical)</option>
+            </select>
+            <button onclick="addTask()">INJECT TASK</button>
+            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
+            <label>Max Power Budget (Watts)</label>
+            <input type="range" id="cap" min="5" max="45" value="30">
+            <button onclick="run()" id="runBtn" style="background:#333; color:white;">START SIMULATION</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:40px;">
+        <div>
+            <span class="footer-title">Project Logic & Methodology</span>
+            This algorithm implements <strong>Dynamic Voltage and Frequency Scaling (DVFS)</strong> tailored for mobile and embedded devices. Unlike standard schedulers that prioritize finishing tasks as quickly as possible, this algorithm calculates the minimum frequency required to finish a task exactly by its deadline. 
+            <br><br>
+            By reducing the operating frequency ($f$), the system can simultaneously reduce the supply voltage ($V$), leading to energy savings proportional to the square of the voltage reduction ($P \approx V^2f$).
+        </div>
+        <div>
+            <span class="footer-title">Technical Features</span>
+            • <strong>Slack-Time Exploitation:</strong> Converts idle CPU cycles into energy savings.<br>
+            • <strong>Power Budget Management:</strong> Enforces a strict Global Power Budget (GPB) to prevent thermal throttling and hardware damage.<br>
+            • <strong>Predictive Scheduling:</strong> Dynamically adjusts the power profile based on task workload and remaining time-to-deadline.
+        </div>
+    </div>
+</footer>
+
+<script>
+    let active = false, clock = 0, queue = [], stats = { naive: 0, actual: 0 };
+    const logEl = document.getElementById('sys-log');
+
+    function log(msg) {
+        logEl.innerHTML += `<div>[${clock}ms] ${msg}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function addTask() {
+        const t = { id: Math.floor(Math.random()*900)+100, work: parseFloat(document.getElementById('load').value), deadline: clock + parseFloat(document.getElementById('deadline').value) };
+        queue.push(t);
+        log(`Task PID-${t.id} added to queue.`);
+    }
+
+    function run() {
+        active = !active;
+        document.getElementById('runBtn').innerText = active ? "STOP SIMULATION" : "START SIMULATION";
+        if(active) loop();
+    }
+
+    async function loop() {
+        while(active) {
+            clock += 50;
+            if(queue.length > 0) {
+                let t = queue[0];
+                let slack = t.deadline - clock;
+                let freq = Math.max(0.8, Math.min(3.2, t.work / (slack/10)));
+                
+                // Power Budget Throttling
+                let power = 0.8 * Math.pow(freq, 3);
+                let budget = parseFloat(document.getElementById('cap').value);
+                
+                if(power > budget) {
+                    freq = Math.pow(budget/0.8, 1/3);
+                    document.getElementById('budget-status').innerText = "THROTTLED";
+                    document.getElementById('budget-status').style.color = "var(--danger)";
+                    power = budget;
+                } else {
+                    document.getElementById('budget-status').innerText = "STABLE";
+                    document.getElementById('budget-status').style.color = "var(--success)";
+                }
+
+                t.work -= (freq * 50);
+                stats.actual += power;
+                stats.naive += 0.8 * Math.pow(3.2, 3);
+
+                document.getElementById('c0').className = "core active-core";
+                document.getElementById('c0-f').innerText = freq.toFixed(2) + " GHz";
+                document.getElementById('power-bar').style.width = (power/45 * 100) + "%";
+
+                if(t.work <= 0) {
+                    log(`Task PID-${t.id} completed successfully.`);
+                    queue.shift();
+                } else if (clock > t.deadline) {
+                    log(`Task PID-${t.id} failed: Deadline missed.`);
+                    queue.shift();
+                }
+            } else {
+                document.getElementById('c0').className = "core";
+                document.getElementById('c0-f').innerText = "IDLE";
+                document.getElementById('power-bar').style.width = "0%";
+            }
+            document.getElementById('save-pct').innerText = stats.naive > 0 ? ((stats.naive - stats.actual)/stats.naive * 100).toFixed(1) + "%" : "0.0%";
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+</script>
+</body>
+</html>
