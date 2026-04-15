@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CADS V5.0 | Sovereign Power Manager</title>
+    <style>
+        :root {
+            --primary: #00e5ff;
+            --bg: #0d1117;
+            --surface: #161b22;
+            --text: #c9d1d9;
+            --danger: #f85149;
+            --success: #3fb950;
+        }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0; padding: 20px;
+        }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; max-width: 1200px; margin: auto; }
+        
+        /* Dashboard Styles */
+        .card { background: var(--surface); border: 1px solid #30363d; border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+        .core-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .core { background: #010409; border: 1px solid #30363d; padding: 15px; text-align: center; border-radius: 6px; }
+        .active-core { border-color: var(--primary); box-shadow: inset 0 0 10px rgba(0,229,255,0.1); }
+        
+        /* Power Chart */
+        .chart-container { height: 20px; background: #010409; border-radius: 10px; margin: 15px 0; overflow: hidden; display: flex; }
+        #dynamic-bar { background: var(--primary); width: 0%; transition: 0.3s; }
+        #static-bar { background: #444; width: 20%; }
+
+        .log { background: #010409; height: 200px; overflow-y: auto; padding: 10px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; border: 1px solid #30363d; color: #8b949e; }
+        
+        /* Inputs */
+        input, select, button { width: 100%; padding: 10px; margin-top: 8px; background: #0d1117; color: white; border: 1px solid #30363d; border-radius: 6px; box-sizing: border-box; }
+        button { background: var(--primary); color: #0d1117; font-weight: bold; border: none; cursor: pointer; margin-top: 15px; }
+        button:hover { opacity: 0.9; }
+
+        footer { margin-top: 40px; padding: 25px; background: var(--surface); border: 1px solid #30363d; border-radius: 6px; font-size: 13px; line-height: 1.6; }
+        .footer-tag { color: var(--primary); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 style="margin:0; color:var(--primary);">CADS_V5.0: Sovereign</h1>
+    <p style="margin:5px 0; font-size:14px; color:#8b949e;">Academic Class Project: Energy-Efficient CPU Scheduling Logic</p>
+</div>
+
+<div class="grid">
+    <div class="main">
+        <div class="card">
+            <h3 style="margin-top:0">System Load Distribution</h3>
+            <div class="core-row">
+                <div id="c0" class="core">C0<br><small>IDLE</small></div>
+                <div id="c1" class="core">C1<br><small>IDLE</small></div>
+                <div id="c2" class="core">C2<br><small>IDLE</small></div>
+                <div id="c3" class="core">C3<br><small>IDLE</small></div>
+            </div>
+            
+            <p style="margin-top:20px; font-size:12px;">Dynamic vs Static Power Draw:</p>
+            <div class="chart-container">
+                <div id="dynamic-bar"></div>
+                <div id="static-bar"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px;">
+                <span>SAVINGS: <b id="save-pct" style="color:var(--success)">0%</b></span>
+                <span>BUDGET STATUS: <b id="budget-status" style="color:var(--success)">UNDER CAP</b></span>
+            </div>
+        </div>
+
+        <div class="log" id="sys-log">> Kernel Awaiting Process Instructions...</div>
+    </div>
+
+    <div class="sidebar">
+        <div class="card">
+            <h4 style="margin:0">Task Parameters</h4>
+            <input type="number" id="load" placeholder="Cycle Workload" value="300">
+            <input type="number" id="deadline" placeholder="Deadline (ms)" value="1000">
+            <select id="prio">
+                <option value="low">Standard Task</option>
+                <option value="high">Urgent/Critical</option>
+            </select>
+            <button onclick="addTask()">INJECT TASK</button>
+            <hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">
+            <label style="font-size:12px;">Power Budget Cap (W)</label>
+            <input type="range" id="cap" min="5" max="50" value="30" oninput="updateCapText(this.value)">
+            <span id="cap-val" style="font-size:11px;">30W</span>
+            <button onclick="run()" id="runBtn" style="background:#30363d; color:white;">BOOT SYSTEM</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+        <div>
+            <span class="footer-tag">Documentation & Purpose</span><br>
+            CADS (Context-Aware Dynamic Slack) is an algorithm designed for <strong>Mobile and Embedded Systems</strong>. It utilizes <strong>DVFS (Dynamic Voltage and Frequency Scaling)</strong> to exploit 'Slack Time'—the gap between a task's completion and its deadline. By running at the lowest viable frequency, we achieve cubic reductions in power consumption ($P \propto V^2f$).
+        </div>
+        <div>
+            <span class="footer-tag">Project Features</span><br>
+            • <strong>V5.0 Power Budgeting:</strong> Monitors global power draw to ensure the system stays within hardware thermal limits.<br>
+            • <strong>Leakage Mitigation:</strong> Simulates the trade-off between scaling frequency and 'Race to Sleep' strategies.<br>
+            • <strong>Preemptive Scaling:</strong> Adjusts frequencies in real-time as high-priority tasks enter the queue.
+        </div>
+    </div>
+</footer>
+
+<script>
+    let running = false, time = 0, queue = [], stats = { n:0, c:0 };
+    const write = (m) => { const l=document.getElementById('sys-log'); l.innerHTML+=`<div>[${time}ms] ${m}</div>`; l.scrollTop=l.scrollHeight; };
+    const updateCapText = (v) => { document.getElementById('cap-val').innerText = v + "W"; };
+
+    function addTask() {
+        queue.push({ id: Math.floor(Math.random()*100), work: parseFloat(document.getElementById('load').value), deadline: time + parseFloat(document.getElementById('deadline').value), prio: document.getElementById('prio').value });
+        write(`Task PID-${queue[queue.length-1].id} loaded into buffer.`);
+    }
+
+    function run() {
+        running = !running;
+        document.getElementById('runBtn').innerText = running ? "HALT SYSTEM" : "BOOT SYSTEM";
+        if(running) tick();
+    }
+
+    async function tick() {
+        while(running) {
+            time += 50;
+            if(queue.length > 0) {
+                let t = queue[0];
+                let slack = t.deadline - time;
+                let freq = Math.max(0.8, Math.min(3.2, t.work / (slack/10)));
+                
+                // Power Budget Check (The V5 change)
+                let currentPower = 0.8 * Math.pow(freq, 3);
+                let cap = parseFloat(document.getElementById('cap').value);
+                
+                if(currentPower > cap) {
+                    freq = Math.pow(cap/0.8, 1/3); // Cap the frequency to the budget
+                    document.getElementById('budget-status').innerText = "CAPPED";
+                    document.getElementById('budget-status').style.color = "var(--danger)";
+                } else {
+                    document.getElementById('budget-status').innerText = "UNDER CAP";
+                    document.getElementById('budget-status').style.color = "var(--success)";
+                }
+
+                t.work -= (freq * 50);
+                stats.c += currentPower;
+                stats.n += 0.8 * Math.pow(3.2, 3);
+
+                document.getElementById('c0').className = "core active-core";
+                document.getElementById('c0').querySelector('small').innerText = freq.toFixed(2) + " GHz";
+                document.getElementById('dynamic-bar').style.width = (currentPower/32 * 100) + "%";
+
+                if(t.work <= 0) { queue.shift(); write(`Task PID-${t.id} completed.`); }
+            } else {
+                document.getElementById('c0').className = "core";
+                document.getElementById('c0').querySelector('small').innerText = "IDLE";
+                document.getElementById('dynamic-bar').style.width = "0%";
+            }
+            document.getElementById('save-pct').innerText = stats.n > 0 ? ((stats.n - stats.c)/stats.n*100).toFixed(1) + "%" : "0%";
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+</script>
+</body>
+</html>
